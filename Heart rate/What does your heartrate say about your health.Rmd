@@ -1,0 +1,134 @@
+---
+title: "Heartbeats Project"
+author: "Lisa Weinstein"
+date: "9/29/2019"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+The p-values for age, sex and heartrate have a p-value of < 0.01. 
+
+```{r}
+hd_data <- read.csv("~/Desktop/Cleveland_hd.csv")
+head(hd_data, n=5)
+
+
+hd_data %>% 
+  mutate(hd = ifelse(class > 0, 1, 0))-> hd_data
+
+# recode sex using mutate function and save as hd_data
+hd_data %>% 
+  mutate(sex = factor(sex, levels = 0:1, labels = c("Female", "Male"))) -> hd_data
+
+# so the appropriate test is chi-squared test
+
+hd_sex <- chisq.test(hd_data$sex, hd_data$hd)
+
+# Does age have an effect? Age is continuous, so we use a t-test
+hd_age <- t.test(age ~ hd, data = hd_data)
+
+# What about thalach? Thalach is continuous, so we use a t-test
+hd_heartrate <- t.test(thalach ~ hd, data = hd_data)
+
+# Print the results to see if p<0.05.
+# all p-values were under 0.05
+print(hd_sex)
+print(hd_age)
+print(hd_heartrate)
+
+
+
+```
+
+## Including Plots
+
+From the boxplots, it indicated that there is more heart disease among older citizens. When you look at the thalach(highest heart rate acheived) boxplot people who do not have heart disease have higher heart rates. Finally, when you look at the bar plot, men tend to get heart disease more than women. 
+
+```{r}
+library(ggplot2)
+# Recode hd to be labelled
+hd_data %>%
+  mutate(hd_labelled = ifelse(hd == 0, "No Disease", "Disease")) -> hd_data
+
+# age vs hd
+a <- ggplot(data = hd_data, aes(x = hd_labelled,y = age, fill = hd_labelled)) + geom_boxplot()
+a
+# sex vs hd
+ggplot(data = hd_data, aes(x = hd_labelled, fill = sex)) + geom_bar(position = "fill") + ylab("Sex %")
+# max heart rate vs hd
+t <- ggplot(data = hd_data, aes(x = hd_labelled, y = thalach, fill = hd_labelled)) + geom_boxplot()
+t
+```
+The coefficient for the variable age is 0.03.  This means that for a one-unit increase in age, we expect a 0.03 increase in the log-odds of the dependent variable heart disease, holding all other independent variables constant.
+
+The coefficient for the variable Male is 1.49.  This means that for a one-unit increase in Male (in other words, going from Female to Male), we expect a 1.49 increase in the log-odds of the dependent variable heart disease, holding all other independent variables constant.
+
+The coefficient for the variable thalach is -0.04.  This means that for a one-unit increase in thalach, we expect a 0.04 decrease in the log-odds of the dependent variable heart disease, holding all other independent variables constant.
+
+From the odds ratio that was calculated, Males are more than four times more likely to obtain heart disease than females. 
+```{r}
+library(broom)
+# use glm function from base R and specify the family argument as binomial
+model <- glm(data = hd_data, family = "binomial", hd ~ age + sex + thalach)
+
+# extract the model summary
+summary(model)
+
+# tidy up the coefficient table
+tidy_m <- tidy(model)
+tidy_m
+
+# calculate OR
+tidy_m$OR <- exp(tidy_m$estimate)
+
+# calculate 95% CI and save as lower CI and upper CI
+tidy_m$lower_CI <- exp(tidy_m$estimate - 1.96 * tidy_m$std.error)
+tidy_m$upper_CI <- exp(tidy_m$estimate + 1.96 * tidy_m$std.error)
+
+# display the updated coefficient table
+tidy_m
+
+# get the predicted probability in our dataset using the predict() function
+```
+
+We predicted that a female who is 45 years old, with a heart rate of 150 would most likely not have the probability of having heart disease. The accuracy of the probability was 0.177.
+```{r}
+pred_prob <- predict(model, hd_data, type = "response")
+
+# create a decision rule using probability 0.5 as cutoff and save the predicted decision into the main data frame
+hd_data$pred_hd <- ifelse(pred_prob >= 0.5,1,0)
+
+# create a newdata data frame to save a new case information
+newdata <- data.frame(age = 45, sex = "Female", thalach = 150)
+
+# predict probability for this new case and print out the predicted value
+p_new <- predict(model,newdata, type = "response")
+p_new
+
+
+
+# confusion matrix
+```
+There is an accuracy of 71 percent, AUC with also 71 percent, and a classification of error with 29 percent.
+
+Out of the 168 cases, 122 cases were correctly predicted. Out of the 132 non-predicted cases, 42 were correctly predicted while 93 was not the true outcome.
+```{r}
+# load Metrics package
+library(Metrics)
+
+# calculate auc, accuracy, clasification error
+auc <- auc(hd_data$hd, hd_data$pred_hd)
+accuracy <- accuracy(hd_data$hd, hd_data$pred_hd)
+classification_error <- ce(hd_data$hd, hd_data$pred_hd)
+
+# print out the metrics on to screen
+print(paste("AUC=", auc))
+print(paste("Accuracy=", accuracy))
+print(paste("Classification Error=", classification_error))
+
+
+table(hd_data$hd,hd_data$pred_hd, dnn=c("True Status", "Predicted Status")) # confusion matrix
+```
