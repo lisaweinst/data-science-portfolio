@@ -91,7 +91,6 @@ tidy_m$upper_CI <- exp(tidy_m$estimate + 1.96 * tidy_m$std.error)
 # display the updated coefficient table
 tidy_m
 
-# get the predicted probability in our dataset using the predict() function
 ```
 
 We predicted that a female who is 45 years old, with a heart rate of 150 would most likely not have the probability of having heart disease. The accuracy of the probability was 0.177.
