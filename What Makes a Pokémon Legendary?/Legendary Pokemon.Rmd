@@ -126,7 +126,7 @@ model_forest <- randomForest(is_legendary ~ attack + defense + height_m + hp + s
 #baseline fit to compare against the results of the random forest
 print(model_forest)
 ```
-
+The random forest plot has a higher true positive rate than the decision tree
 
 ```{r}
 library(ROCR)
