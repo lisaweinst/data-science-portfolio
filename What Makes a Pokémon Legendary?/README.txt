@@ -1,1 +1,1 @@
-This project will discover what makes a Pokemon legendary. This project uses a random forest algorithm to predict a Pokemon's status based on their characteristics and rank of importance to determine what classifies a Pokemon as legendary. 
+This project will discover what makes a Pokemon legendary. It utilizes a random forest algorithm to predict a Pokemon's status based on their characteristics and rank of importance to determine what classifies a Pokemon as legendary. 
